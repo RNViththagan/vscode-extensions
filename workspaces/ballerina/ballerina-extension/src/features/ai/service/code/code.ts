@@ -17,7 +17,13 @@
 import { CoreMessage, generateText, streamText } from "ai";
 import { anthropic, ANTHROPIC_SONNET_4 } from "../connection";
 import { GenerationType, getRelevantLibrariesAndFunctions } from "../libs/libs";
-import { getRewrittenPrompt, populateHistory, transformProjectSource, getErrorMessage, extractResourceDocumentContent } from "../utils";
+import {
+    getRewrittenPrompt,
+    populateHistory,
+    transformProjectSource,
+    getErrorMessage,
+    extractResourceDocumentContent,
+} from "../utils";
 import { getMaximizedSelectedLibs, selectRequiredFunctions, toMaximizedLibrariesFromLibJson } from "./../libs/funcs";
 import { GetFunctionResponse } from "./../libs/funcs_inter_types";
 import { LANGLIBS } from "./../libs/langlibs";
@@ -40,17 +46,23 @@ import { getProjectSource, postProcess } from "../../../../rpc-managers/ai-panel
 import { CopilotEventHandler, createWebviewEventHandler } from "../event";
 import { AIPanelAbortController } from "../../../../../src/rpc-managers/ai-panel/utils";
 import { getRequirementAnalysisCodeGenPrefix, getRequirementAnalysisTestGenPrefix } from "./np_prompts";
-
+import { getRelevantLibrariesAndFunctionsFromTool } from "../libs/sample_libs";
 // Core code generation function that emits events
 export async function generateCodeCore(params: GenerateCodeRequest, eventHandler: CopilotEventHandler): Promise<void> {
     const project: ProjectSource = await getProjectSource(params.operationType);
     const packageName = project.projectName;
     const sourceFiles: SourceFiles[] = transformProjectSource(project);
     const prompt = getRewrittenPrompt(params, sourceFiles);
-    const relevantTrimmedFuncs: Library[] = (
-        await getRelevantLibrariesAndFunctions({ query: prompt }, GenerationType.CODE_GENERATION)
-    ).libraries;
 
+    const result1 = (await getRelevantLibrariesAndFunctions({ query: prompt }, GenerationType.CODE_GENERATION))
+        .libraries;
+    const result2 = (await getRelevantLibrariesAndFunctionsFromTool({ query: prompt }, GenerationType.CODE_GENERATION))
+        .libraries;
+
+    console.log("Result from getRelevantLibrariesAndFunctions:", result1);
+    console.log("Result from getRelevantLibrariesAndFunctionsFromTool:", result2);
+
+    const relevantTrimmedFuncs: Library[] = result2;
     const historyMessages = populateHistory(params.chatHistory);
     const allMessages: CoreMessage[] = [
         {
@@ -67,7 +79,13 @@ export async function generateCodeCore(params: GenerateCodeRequest, eventHandler
         ...historyMessages,
         {
             role: "user",
-            content: getUserPrompt(prompt, sourceFiles, params.fileAttachmentContents, packageName, params.operationType),
+            content: getUserPrompt(
+                prompt,
+                sourceFiles,
+                params.fileAttachmentContents,
+                packageName,
+                params.operationType
+            ),
             providerOptions: {
                 anthropic: { cacheControl: { type: "ephemeral" } },
             },
@@ -76,7 +94,7 @@ export async function generateCodeCore(params: GenerateCodeRequest, eventHandler
 
     const { fullStream } = streamText({
         model: anthropic(ANTHROPIC_SONNET_4),
-        maxTokens: 4096*4,
+        maxTokens: 4096 * 4,
         temperature: 0,
         messages: allMessages,
         abortSignal: AIPanelAbortController.getInstance().signal,
@@ -102,7 +120,7 @@ export async function generateCodeCore(params: GenerateCodeRequest, eventHandler
                 const finishReason = part.finishReason;
                 console.log("Finish reason: ", finishReason);
                 if (finishReason === "error") {
-                    // Already handled in error case. 
+                    // Already handled in error case.
                     break;
                 }
                 const postProcessedResp: PostProcessResponse = await postProcess({
@@ -122,13 +140,11 @@ export async function generateCodeCore(params: GenerateCodeRequest, eventHandler
                     console.log("Repair iteration: ", repair_attempt);
                     console.log("Diagnotsics trynna fix: ", diagnostics);
 
-                    const repairedResponse: RepairResponse = await repairCode(
-                        {
-                            previousMessages: allMessages,
-                            assistantResponse: diagnosticFixResp,
-                            diagnostics: diagnostics,
-                        }
-                    );
+                    const repairedResponse: RepairResponse = await repairCode({
+                        previousMessages: allMessages,
+                        assistantResponse: diagnosticFixResp,
+                        diagnostics: diagnostics,
+                    });
                     diagnosticFixResp = repairedResponse.repairResponse;
                     diagnostics = repairedResponse.diagnostics;
                     repair_attempt++;
@@ -156,7 +172,6 @@ export async function generateCode(params: GenerateCodeRequest): Promise<void> {
 }
 
 function getSystemPromptPrefix(apidocs: Library[], sourceFiles: SourceFiles[], op: OperationType): string {
-    
     if (op === "CODE_FOR_USER_REQUIREMENT") {
         return getRequirementAnalysisCodeGenPrefix(apidocs, extractResourceDocumentContent(sourceFiles));
     } else if (op === "TESTS_FOR_USER_REQUIREMENT") {
@@ -177,9 +192,9 @@ function getSystemPromptSuffix(langlibs: Library[]) {
     return `2. Langlibs
 <langlibs>
 ${JSON.stringify(langlibs)}
-</langlibs> 
+</langlibs>
 
-If the query doesn't require code examples, answer the code by utilzing the api documentation. 
+If the query doesn't require code examples, answer the code by utilzing the api documentation.
 If the query requires code, Follow these steps to generate the Ballerina code:
 
 1. Carefully analyze the provided API documentation:
@@ -201,7 +216,7 @@ If the query requires code, Follow these steps to generate the Ballerina code:
 4. Generate the Ballerina code:
    - Start with the required import statements.
    - Define required configurables for the query. Use only string, int, boolean types in configurable variables.
-   - Initialize any necessary clients with the correct configuration at the module level(before any function or service declarations). 
+   - Initialize any necessary clients with the correct configuration at the module level(before any function or service declarations).
    - Implement the main function OR service to address the query requirements.
    - Use defined connectors based on the query by following the API documentation.
    - Use only the functions, types, and clients specified in the API documentation.
@@ -224,13 +239,13 @@ Important reminders:
 - Only use specified fields in records according to the api docs. this applies to array types of that record as well.
 - Ensure your code is syntactically correct and follows Ballerina conventions.
 - Do not use dynamic listener registrations.
-- Do not write code in a way that requires updating/assigning values of function parameters. 
+- Do not write code in a way that requires updating/assigning values of function parameters.
 - ALWAYS Use two words camel case identifiers (variable, function parameter, resource function parameter and field names).
 - If the library name contains a . Always use an alias in the import statement. (import org/package.one as one;)
-- Treat generated connectors/clients inside the generated folder as submodules. 
+- Treat generated connectors/clients inside the generated folder as submodules.
 - A submodule MUST BE imported before being used.  The import statement should only contain the package name and submodule name.  For package my_pkg, folder strucutre generated/fooApi the import should be \`import my_pkg.fooApi;\`
-- If the return parameter typedesc default value is marked as <> in the given API docs, define a custom record in the code that represents the data structure based on the use case and assign to it.  
-- Whenever you have a Json variable, NEVER access or manipulate Json variables. ALWAYS define a record and convert the Json to that record and use it. 
+- If the return parameter typedesc default value is marked as <> in the given API docs, define a custom record in the code that represents the data structure based on the use case and assign to it.
+- Whenever you have a Json variable, NEVER access or manipulate Json variables. ALWAYS define a record and convert the Json to that record and use it.
 - When invoking resource function from a client, use the correct paths with accessor and paramters. (eg: exampleClient->/path1/["param"]/path2.get(key="value"))
 - When you are accessing a field of a record, always assign it into new variable and use that variable in the next statement.
 - Avoid long comments in the code. Use // for single line comments.
@@ -241,16 +256,16 @@ Important reminders:
 - In the library API documentation if the service type is specified as generic, adhere to the instructions specified there on writing the service.
 - For GraphQL service related queries, If the user haven't specified their own GraphQL Scehma, Write the proposed GraphQL schema for the user query right after explanation before generating the ballerina code. Use same names as the GraphQL Schema when defining record types.
 
-Begin your response with the explanation, once the entire explanation is finished only, include codeblock segments(if any) in the end of the response. 
+Begin your response with the explanation, once the entire explanation is finished only, include codeblock segments(if any) in the end of the response.
 The explanation should explain the control flow decided in step 2, along with the selected libraries and their functions.
 
-Each file which needs modifications, should have a codeblock segment and it MUST have complete file content with the proposed change. 
+Each file which needs modifications, should have a codeblock segment and it MUST have complete file content with the proposed change.
 The codeblock segments should only have .bal contents and it should not generate or modify any other file types. Politely decline if the query requests for such cases.
 
 Example Codeblock segment:
 <code filename="main.bal">
 \`\`\`ballerina
-//code goes here 
+//code goes here
 \`\`\`
 </code>
 `;
@@ -265,7 +280,7 @@ function getUserPrompt(
 ): string {
     let fileInstructions = "";
     if (fileUploadContents.length > 0) {
-        fileInstructions = `4. File Upload Contents. : Contents of the file which the user uploaded as addtional information for the query. 
+        fileInstructions = `4. File Upload Contents. : Contents of the file which the user uploaded as addtional information for the query.
 
 ${fileUploadContents
     .map(
@@ -275,7 +290,7 @@ Content: ${file.content}`
     .join("\n")}`;
     }
 
-    return `QUERY: The query you need to answer using the provided api documentation. 
+    return `QUERY: The query you need to answer using the provided api documentation.
 <query>
 ${usecase}
 </query>
@@ -333,8 +348,7 @@ export async function repairCode(params: RepairParams): Promise<RepairResponse> 
         maxTokens: 4096 * 4,
         temperature: 0,
         messages: allMessages,
-        abortSignal: AIPanelAbortController.getInstance().signal
-
+        abortSignal: AIPanelAbortController.getInstance().signal,
     });
 
     // replace original response with new code blocks
