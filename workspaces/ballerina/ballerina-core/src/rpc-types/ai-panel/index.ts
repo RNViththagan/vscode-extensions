@@ -90,4 +90,10 @@ export interface AIPanelAPI {
     // ==================================
     getGeneratedDocumentation: (params: DocGenerationRequest) => Promise<boolean>;
     addFilesToProject: (params: AddFilesToProjectRequest) => Promise<boolean>;
+    // ==================================
+    // Checkpoint Operations
+    // ==================================
+    restoreToCheckpoint: (messageId: string) => Promise<boolean>;
+    hasCheckpoint: (messageId: string) => Promise<boolean>;
+    getAllCheckpoints: () => Promise<Array<{messageId: string; undoIndex: number; description: string; timestamp: number}>>;
 }

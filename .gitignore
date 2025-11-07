@@ -85,3 +85,27 @@ pnpm-lock.yaml
 
 # AI evaluation results
 **/results
+doc/
+agent-mode-technical-architecture.md
+design-mode-architecture.md
+design-mode-code-review-presentation final.md
+design-mode-code-review-presentation.md
+design-mode-diagrams.md
+design-mode-flow-diagram.md
+proposal.md
+workspaces/ballerina/ballerina-extension/src/RPCLayer.ts
+workspaces/ballerina/ballerina-extension/src/views/ai-panel/aiChatMachine.ts.backup
+workspaces/ballerina/ballerina-extension/src/RPCLayer.ts
+workspaces/ballerina/ballerina-extension/src/RPCLayer.ts
+.gitignore
+copilot-restore-checkpoint-analysis.md
+proposal-email.md
+agent-architecture-simplified.md
+agent-mode-business-architecture.md
+architecture diagram for business.md
+Copilot playing the leading role.md
+docs/checkpoint-implementation-plan-vscode-native.md
+docs/checkpoint-implementation-plan.md
+docs/checkpoint-implementation-vscode-native.md
+docs/copilot-restore-points-analysis.md
+docs/checkpoint-implementation-detailed-technical-plan.md

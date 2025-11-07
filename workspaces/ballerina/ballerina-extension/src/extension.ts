@@ -46,6 +46,7 @@ import { activateAIFeatures } from './features/ai/activator';
 import { activateTryItCommand } from './features/tryit/activator';
 import { activate as activateNPFeatures } from './features/natural-programming/activator';
 import { activateAgentChatPanel } from './views/agent-chat/activate';
+import { CheckpointManager } from './features/ai/checkpoint/CheckpointManager';
 
 let langClient: ExtendedLangClient;
 export let isPluginStartup = true;
@@ -109,10 +110,13 @@ export async function activate(context: ExtensionContext) {
     extension.context = context;
     // Init RPC Layer methods
     RPCLayer.init();
-    
+
+    // Initialize CheckpointManager for AI-generated code checkpoints
+    CheckpointManager.initialize(context);
+
     // Wait for the ballerina extension to be ready
     await StateMachine.initialize();
-    
+
     // Then return the ballerina extension context
     return { ballerinaExtInstance: extension.ballerinaExtInstance, projectPath: StateMachine.context().projectUri };
 }

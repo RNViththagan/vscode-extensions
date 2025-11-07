@@ -307,7 +307,11 @@ async function handleTaskCompletion(
     console.log(`[TaskWrite Tool] Detected ${newlyCompletedTasks.length} newly completed task(s)`);
 
     if (updatedSourceFiles && updatedFileNames) {
-        await integrateCodeToWorkspace(updatedSourceFiles, updatedFileNames);
+        // Get the assistant message ID from chat history
+        const lastMessage = currentContext.chatHistory?.[currentContext.chatHistory.length - 1];
+        const messageId = lastMessage?.role === 'assistant' ? lastMessage.id : undefined;
+
+        await integrateCodeToWorkspace(updatedSourceFiles, updatedFileNames, messageId, lastCompletedTask.description);
     }
 
     AIChatStateMachine.sendEvent({

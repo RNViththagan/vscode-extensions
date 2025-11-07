@@ -17,8 +17,14 @@
 import { SourceFiles, FileChanges } from "@wso2/ballerina-core";
 import { workspace } from "vscode";
 import { addToIntegration } from "../../../../rpc-managers/ai-panel/utils";
+import { CheckpointManager } from "../../checkpoint/CheckpointManager";
 
-export async function integrateCodeToWorkspace(updatedSourceFiles: SourceFiles[], updatedFileNames: string[]): Promise<void> {
+export async function integrateCodeToWorkspace(
+    updatedSourceFiles: SourceFiles[],
+    updatedFileNames: string[],
+    messageId?: string,
+    taskDescription?: string
+): Promise<void> {
     if (!updatedSourceFiles?.length || !updatedFileNames?.length) {
         console.log("[Design Integration] No files to integrate");
         return;
@@ -54,6 +60,14 @@ export async function integrateCodeToWorkspace(updatedSourceFiles: SourceFiles[]
 
     try {
         console.log(`[Design Integration] Applying ${fileChanges.length} file change(s)...`);
+
+        // Create checkpoint before integration if messageId is provided
+        if (messageId) {
+            console.log(`[Design Integration] Creating checkpoint for message: ${messageId}`);
+            const checkpointManager = CheckpointManager.getInstance();
+            await checkpointManager.createCheckpoint(messageId, workspaceFolderPath, fileChanges, taskDescription);
+        }
+
         await addToIntegration(workspaceFolderPath, fileChanges);
         console.log("[Design Integration] Successfully integrated code");
     } catch (error) {

@@ -86,3 +86,8 @@ export const generateHealthcareCode: NotificationType<GenerateCodeRequest> = { m
 export const abortAIGeneration: NotificationType<void> = { method: `${_preFix}/abortAIGeneration` };
 export const getGeneratedDocumentation: RequestType<DocGenerationRequest, boolean> = { method: `${_preFix}/getGeneratedDocumentation` };
 export const addFilesToProject: RequestType<AddFilesToProjectRequest, boolean> = { method: `${_preFix}/addFilesToProject` };
+
+// Checkpoint operations
+export const restoreToCheckpoint: RequestType<string, boolean> = { method: `${_preFix}/restoreToCheckpoint` };
+export const hasCheckpoint: RequestType<string, boolean> = { method: `${_preFix}/hasCheckpoint` };
+export const getAllCheckpoints: RequestType<void, Array<{messageId: string; undoIndex: number; description: string; timestamp: number}>> = { method: `${_preFix}/getAllCheckpoints` };

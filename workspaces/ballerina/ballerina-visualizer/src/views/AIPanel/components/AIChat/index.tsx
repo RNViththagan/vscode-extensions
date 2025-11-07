@@ -94,6 +94,7 @@ import { getOnboardingOpens, incrementOnboardingOpens } from "./utils/utils";
 
 import FeedbackBar from "./../FeedbackBar";
 import { useFeedback } from "./utils/useFeedback";
+import CheckpointDropdown from "../CheckpointDropdown";
 
 interface ChatIndexes {
     integratedChatIndex: number;
@@ -2216,6 +2217,7 @@ const AIChat: React.FC = () => {
                             <br />
                             {/* <ResetsInBadge>{`Resets in: 30 days`}</ResetsInBadge> */}
                         </Badge>
+                        <CheckpointDropdown />
                         <div>State: {aiChatStateMachineState}</div>
                         <HeaderButtons>
                             <Button

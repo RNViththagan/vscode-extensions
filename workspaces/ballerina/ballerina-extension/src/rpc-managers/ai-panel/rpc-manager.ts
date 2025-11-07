@@ -1047,6 +1047,47 @@ export class AiPanelRpcManager implements AIPanelAPI {
         await generateDesign(params);
         return true;
     }
+
+    // ==================================
+    // Checkpoint Operations
+    // ==================================
+
+    async restoreToCheckpoint(messageId: string): Promise<boolean> {
+        const { CheckpointManager } = await import('../../features/ai/checkpoint/CheckpointManager');
+        const checkpointManager = CheckpointManager.getInstance();
+
+        // Get checkpoint by message ID
+        const checkpoint = await checkpointManager.getCheckpointByMessageId(messageId);
+        if (!checkpoint) {
+            console.error(`[RPC] No checkpoint found for message: ${messageId}`);
+            return false;
+        }
+
+        const result = await checkpointManager.restoreViaPicker(checkpoint.id);
+        return result.success;
+    }
+
+    async hasCheckpoint(messageId: string): Promise<boolean> {
+        const { CheckpointManager } = await import('../../features/ai/checkpoint/CheckpointManager');
+        const checkpointManager = CheckpointManager.getInstance();
+        return checkpointManager.hasCheckpoint(messageId);
+    }
+
+    async getAllCheckpoints(): Promise<Array<{messageId: string; undoIndex: number; description: string; timestamp: number}>> {
+        const { CheckpointManager } = await import('../../features/ai/checkpoint/CheckpointManager');
+        const checkpointManager = CheckpointManager.getInstance();
+
+        const checkpoints = await checkpointManager.getAllCheckpoints();
+
+        // Transform CheckpointMetadata to expected format
+        // Note: undoIndex is not used in VS Code Local History approach, so we use 0
+        return checkpoints.map(cp => ({
+            messageId: cp.messageId,
+            undoIndex: 0,  // Not applicable for VS Code Local History approach
+            description: cp.taskDescription,
+            timestamp: cp.timestamp
+        }));
+    }
 }
 
 function getModifiedAssistantResponse(originalAssistantResponse: string, tempDir: string, project: ProjectSource): string {
@@ -1339,3 +1380,4 @@ export async function getProjectSource(requestType: OperationType): Promise<Proj
 
     return projectSource;
 }
+

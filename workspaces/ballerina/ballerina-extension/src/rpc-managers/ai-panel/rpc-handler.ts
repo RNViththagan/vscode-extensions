@@ -109,7 +109,10 @@ import {
     TestGeneratorIntermediaryState,
     TestPlanGenerationRequest,
     updateDevelopmentDocument,
-    updateRequirementSpecification
+    updateRequirementSpecification,
+    restoreToCheckpoint,
+    hasCheckpoint,
+    getAllCheckpoints
 } from "@wso2/ballerina-core";
 import { Messenger } from "vscode-messenger";
 import { AiPanelRpcManager } from "./rpc-manager";
@@ -179,4 +182,9 @@ export function registerAiPanelRpcHandlers(messenger: Messenger) {
     messenger.onNotification(abortAIGeneration, () => rpcManger.abortAIGeneration());
     messenger.onRequest(getGeneratedDocumentation, (args: DocGenerationRequest) => rpcManger.getGeneratedDocumentation(args));
     messenger.onRequest(addFilesToProject, (args: AddFilesToProjectRequest) => rpcManger.addFilesToProject(args));
+
+    // Checkpoint operations
+    messenger.onRequest(restoreToCheckpoint, (args: string) => rpcManger.restoreToCheckpoint(args));
+    messenger.onRequest(hasCheckpoint, (args: string) => rpcManger.hasCheckpoint(args));
+    messenger.onRequest(getAllCheckpoints, () => rpcManger.getAllCheckpoints());
 }

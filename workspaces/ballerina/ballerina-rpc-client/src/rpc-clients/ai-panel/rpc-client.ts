@@ -86,6 +86,7 @@ import {
     getAIMachineSnapshot,
     getAccessToken,
     getActiveFile,
+    getAllCheckpoints,
     getBackendUrl,
     getContentFromFile,
     getDefaultPrompt,
@@ -108,6 +109,7 @@ import {
     getTestDiagnostics,
     getTypesFromRecord,
     handleChatSummaryError,
+    hasCheckpoint,
     isCopilotSignedIn,
     isNaturalProgrammingDirectoryExists,
     isRequirementsSpecificationFileExist,
@@ -119,6 +121,7 @@ import {
     promptWSO2AILogout,
     readDeveloperMdFile,
     repairGeneratedCode,
+    restoreToCheckpoint,
     showSignInAlert,
     stopAIMappings,
     submitFeedback,
@@ -385,5 +388,17 @@ export class AiPanelRpcClient implements AIPanelAPI {
 
     addFilesToProject(params: AddFilesToProjectRequest): Promise<boolean> {
         return this._messenger.sendRequest(addFilesToProject, HOST_EXTENSION, params);
+    }
+
+    restoreToCheckpoint(messageId: string): Promise<boolean> {
+        return this._messenger.sendRequest(restoreToCheckpoint, HOST_EXTENSION, messageId);
+    }
+
+    hasCheckpoint(messageId: string): Promise<boolean> {
+        return this._messenger.sendRequest(hasCheckpoint, HOST_EXTENSION, messageId);
+    }
+
+    getAllCheckpoints(): Promise<Array<{messageId: string; undoIndex: number; description: string; timestamp: number}>> {
+        return this._messenger.sendRequest(getAllCheckpoints, HOST_EXTENSION);
     }
 }

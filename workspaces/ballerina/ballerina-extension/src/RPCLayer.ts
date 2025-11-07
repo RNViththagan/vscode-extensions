@@ -69,6 +69,12 @@ export class RPCLayer {
                 RPCLayer._messenger.sendNotification(aiStateChanged, { type: 'webview', webviewType: AiPanelWebview.viewType }, state.value);
             });
             AIChatStateMachine.service().onTransition((state) => {
+                console.log('[RPCLayer] AI Chat State changed:', state.value, 'Context:', {
+                    currentTaskIndex: state.context.currentTaskIndex,
+                    planTasksCount: state.context.currentPlan?.tasks.length,
+                    autoApproveEnabled: state.context.autoApproveEnabled,
+                    tasks: state.context.currentPlan?.tasks.map(t => ({ status: t.status, desc: t.description }))
+                });
                 RPCLayer._messenger.sendNotification(aiChatStateChanged, { type: 'webview', webviewType: AiPanelWebview.viewType }, state.value);
             });
         }
