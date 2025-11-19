@@ -29,6 +29,7 @@ import { Library } from "../libs/libs_types";
 import { AIChatStateMachine } from "../../../../views/ai-panel/aiChatMachine";
 import { getTempProject, FileModificationInfo } from "../../utils/temp-project-utils";
 import { formatCodebaseStructure } from "./utils";
+import { createConnectorGeneratorTool } from "../libs/connectorGeneratorTool";
 
 export async function generateDesignCore(params: GenerateAgentCodeRequest, eventHandler: CopilotEventHandler): Promise<void> {
     const messageId = params.messageId;
@@ -40,12 +41,16 @@ export async function generateDesignCore(params: GenerateAgentCodeRequest, event
 
     const modifiedFiles: string[] = [];
 
-    const userMessageContent = getUserPrompt(params.usecase, hasHistory, tempProjectPath);
+    const userMessageContent = getUserPrompt(params.usecase, hasHistory, tempProjectPath, project.projectName);
     const allMessages: ModelMessage[] = [
         {
             role: "system",
             content: getSystemPrompt(),
             providerOptions: cacheOptions,
+        },
+        {
+            role: "system",
+            content: "Before performing each action, briefly explain what you are doing in simple language.",
         },
         ...historyMessages,
         {
@@ -63,6 +68,7 @@ export async function generateDesignCore(params: GenerateAgentCodeRequest, event
     const tools = {
         [TASK_WRITE_TOOL_NAME]: createTaskWriteTool(eventHandler, tempProjectPath, modifiedFiles),
         LibraryProviderTool: getLibraryProviderTool(libraryDescriptions, GenerationType.CODE_GENERATION),
+        ConnectorGeneratorTool: createConnectorGeneratorTool(eventHandler, project.projectName),
         [FILE_WRITE_TOOL_NAME]: createWriteTool(createWriteExecute(tempProjectPath, modifiedFiles)),
         [FILE_SINGLE_EDIT_TOOL_NAME]: createEditTool(createEditExecute(tempProjectPath, modifiedFiles)),
         [FILE_BATCH_EDIT_TOOL_NAME]: createBatchEditTool(createMultiEditExecute(tempProjectPath, modifiedFiles)),
@@ -105,7 +111,14 @@ export async function generateDesignCore(params: GenerateAgentCodeRequest, event
 
                 if (toolName === "LibraryProviderTool") {
                     selectedLibraries = (part.input as any)?.libraryNames || [];
-                } else if ([FILE_WRITE_TOOL_NAME, FILE_SINGLE_EDIT_TOOL_NAME, FILE_BATCH_EDIT_TOOL_NAME, FILE_READ_TOOL_NAME].includes(toolName)) {
+                } else if (
+                    [
+                        FILE_WRITE_TOOL_NAME,
+                        FILE_SINGLE_EDIT_TOOL_NAME,
+                        FILE_BATCH_EDIT_TOOL_NAME,
+                        FILE_READ_TOOL_NAME,
+                    ].includes(toolName)
+                ) {
                     const input = part.input as any;
                     if (input && input.file_path) {
                         let fileName = input.file_path;
@@ -134,8 +147,14 @@ export async function generateDesignCore(params: GenerateAgentCodeRequest, event
                 } else if (toolName === "LibraryProviderTool") {
                     const libraryNames = (part.output as Library[]).map((lib) => lib.name);
                     const fetchedLibraries = libraryNames.filter((name) => selectedLibraries.includes(name));
-                }
-                else if ([FILE_WRITE_TOOL_NAME, FILE_SINGLE_EDIT_TOOL_NAME, FILE_BATCH_EDIT_TOOL_NAME, FILE_READ_TOOL_NAME].includes(toolName)) {
+                } else if (
+                    [
+                        FILE_WRITE_TOOL_NAME,
+                        FILE_SINGLE_EDIT_TOOL_NAME,
+                        FILE_BATCH_EDIT_TOOL_NAME,
+                        FILE_READ_TOOL_NAME,
+                    ].includes(toolName)
+                ) {
                 } else {
                     eventHandler({ type: "tool_result", toolName });
                 }
@@ -145,6 +164,10 @@ export async function generateDesignCore(params: GenerateAgentCodeRequest, event
                 const error = part.error;
                 console.error("[Design] Error:", error);
                 eventHandler({ type: "error", content: getErrorMessage(error) });
+                break;
+            }
+            case "text-start": {
+                    eventHandler({ type: "content_block", content: " \n" });
                 break;
             }
             case "abort": {
@@ -197,7 +220,7 @@ Generation stopped by user. The last in-progress task was not saved. Files have 
                 });
                 break;
             }
-            }
+        }
         }
 }
 
@@ -332,6 +355,7 @@ This plan will be visible to the user and the execution will be guided on the ta
 - Do NOT mention internal tool names to users
 
 **Execution Flow**:
+
 1. Think about and explain your high-level design plan to the user
 2. After explaining the plan, output: <toolcall>Planning...</toolcall>
 3. Then immediately call ${TASK_WRITE_TOOL_NAME} with the broken down tasks (DO NOT write any text after the toolcall tag)
@@ -339,8 +363,13 @@ This plan will be visible to the user and the execution will be guided on the ta
 5. Once plan is APPROVED (success: true in tool response), IMMEDIATELY start the execution cycle:
 
    **For each task:**
-   - Mark task as in_progress using ${TASK_WRITE_TOOL_NAME} (send ALL tasks)
+   - Mark task as in_progress using ${TASK_WRITE_TOOL_NAME} and immediately start implementation in parallel (single message with multiple tool calls)
    - Implement the task completely (write the Ballerina code)
+   - **External API Integration**:
+     * First check LibraryProviderTool for known services (Stripe, GitHub, etc.)
+     * If NOT available, call ConnectorGeneratorTool to generate connector from OpenAPI spec
+     * Tool returns importStatement - use this exact import statement
+     * Use the provided import statement and generated connector in your integration code
    - Mark task as completed using ${TASK_WRITE_TOOL_NAME} (send ALL tasks)
    - The tool will wait for TASK COMPLETION APPROVAL from the user
    - Once approved (success: true), immediately start the next task
@@ -360,7 +389,11 @@ When generating Ballerina code:
 1. **Imports**: Import required libraries
    - Do NOT import these (already available by default): lang.string, lang.boolean, lang.float, lang.decimal, lang.int, lang.map
 
-2. **Structure**:
+2. **Local Connectors**:
+   - If the codebase structure shows connector modules in generated/moduleName, import using: import packageName.moduleName
+   - This applies to connectors that already exist in the codebase, not those generated via ConnectorGeneratorTool
+
+3. **Structure**:
    - Define types in types.bal file
    - Initialize necessary clients
    - Create service OR main function
@@ -382,14 +415,15 @@ When generating Ballerina code:
  * @param usecase User's query/requirement
  * @param hasHistory Whether chat history exists
  * @param tempProjectPath Path to temp project (used when hasHistory is false)
+ * @param packageName Name of the Ballerina package
  */
-function getUserPrompt(usecase: string, hasHistory: boolean, tempProjectPath: string) {
+function getUserPrompt(usecase: string, hasHistory: boolean, tempProjectPath: string, packageName: string) {
     const content = [];
 
     if (!hasHistory) {
         content.push({
             type: 'text' as const,
-            text: formatCodebaseStructure(tempProjectPath)
+            text: formatCodebaseStructure(tempProjectPath, packageName)
         });
     }
 
@@ -402,37 +436,3 @@ ${usecase}
 
     return content;
 }
-
-/**
- * Formats file modifications into XML structure for Claude
- * TODO: This function is currently not used. Can be removed if workspace modification
- * tracking is not needed in the future.
- */
-function formatModifications(modifications: FileModificationInfo[]): string {
-    if (modifications.length === 0) {
-        return '';
-    }
-
-    const modifiedFiles = modifications.filter(m => m.type === 'modified').map(m => m.filePath);
-    const newFiles = modifications.filter(m => m.type === 'new').map(m => m.filePath);
-    const deletedFiles = modifications.filter(m => m.type === 'deleted').map(m => m.filePath);
-
-    let text = '<workspace_changes>\n';
-    text += 'The following changes were detected in the workspace since the last session. ';
-    text += 'You do not need to acknowledge or repeat these changes in your response. ';
-    text += 'This information is provided for your awareness only.\n\n';
-
-    if (modifiedFiles.length > 0) {
-        text += '<modified_files>\n' + modifiedFiles.join('\n') + '\n</modified_files>\n\n';
-    }
-    if (newFiles.length > 0) {
-        text += '<new_files>\n' + newFiles.join('\n') + '\n</new_files>\n\n';
-    }
-    if (deletedFiles.length > 0) {
-        text += '<deleted_files>\n' + deletedFiles.join('\n') + '\n</deleted_files>\n\n';
-    }
-
-    text += '</workspace_changes>';
-    return text;
-}
-
