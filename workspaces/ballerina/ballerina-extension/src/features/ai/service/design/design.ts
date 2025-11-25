@@ -31,6 +31,7 @@ import { AIChatStateMachine } from "../../../../views/ai-panel/aiChatMachine";
 import { getTempProject } from "../../utils/temp-project-utils";
 import { getSystemPrompt, getUserPrompt } from "./prompts";
 import { createConnectorGeneratorTool, CONNECTOR_GENERATOR_TOOL } from "../libs/connectorGeneratorTool";
+import { integrateCodeToWorkspace } from "./utils";
 import { LangfuseExporter } from 'langfuse-vercel';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
@@ -230,6 +231,18 @@ Generation stopped by user. The last in-progress task was not saved. Files have 
                 const assistantMessages = finalResponse.messages || [];
 
                 console.log(`[Design] Finished with reason: ${finishReason}`);
+
+                // Fallback integration: integrate any remaining modified files that weren't integrated via TaskWrite
+                if (modifiedFiles.length > 0) {
+                    const modifiedFilesSet = new Set(modifiedFiles);
+                    try {
+                        await integrateCodeToWorkspace(tempProjectPath, modifiedFilesSet);
+                        console.log(`[Design] Successfully integrated files on stream completion`);
+                        modifiedFiles.length = 0;
+                    } catch (error) {
+                        console.error(`[Design] Failed to integrate files on completion:`, error);
+                    }
+                }
 
                 updateAndSaveChat(messageId, userMessageContent, assistantMessages, eventHandler);
                 eventHandler({ type: "stop", command: Command.Design });
