@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SemanticDiffResponse, SemanticDiff, ChangeTypeEnum, MachineStateValue, MACHINE_VIEW } from "@wso2/ballerina-core";
 import styled from "@emotion/styled";
 import { useRpcContext } from "@wso2/ballerina-rpc-client";
@@ -265,6 +265,7 @@ export function ReviewMode(): JSX.Element {
     const [projectPath, setProjectPath] = useState<string | null>(null);
     const [semanticDiffData, setSemanticDiffData] = useState<SemanticDiffResponse | null>(null);
     const [views, setViews] = useState<ReviewView[]>([]);
+    const viewsRef = useRef<ReviewView[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [currentItemMetadata, setCurrentItemMetadata] = useState<ItemMetadata | null>(null);
@@ -391,6 +392,7 @@ export function ReviewMode(): JSX.Element {
 
             allViews.push(...diagramViews);
 
+            viewsRef.current = allViews;
             setViews(allViews);
             let targetIndex = 0;
             try {
@@ -421,23 +423,24 @@ export function ReviewMode(): JSX.Element {
         rpcClient.onRefreshReviewMode(handleRefresh);
     }, [rpcClient, loadSemanticDiff]);
 
-    // Navigate to a specific index when state machine reaches viewReady (handles chip re-clicks when already open)
+    // Navigate to a specific index when state machine reaches viewReady (handles chip re-clicks when already open).
+    // Registered once using a ref for views to avoid overwriting other onStateChanged listeners on re-render.
     useEffect(() => {
         rpcClient.onStateChanged(async (state: MachineStateValue) => {
             if (typeof state === 'object' && 'viewActive' in state && state.viewActive === 'viewReady') {
-                if (views.length === 0) return; // let loadSemanticDiff handle first load
+                if (viewsRef.current.length === 0) return; // let loadSemanticDiff handle first load
                 try {
                     const location = await rpcClient.getVisualizerLocation();
                     if (location?.view !== MACHINE_VIEW.ReviewMode) return;
                     const idx = location?.reviewData?.currentIndex ?? 0;
-                    if (idx >= 0 && idx < views.length) {
+                    if (idx >= 0 && idx < viewsRef.current.length) {
                         setCurrentIndex(idx);
                         setShowOldVersion(false);
                     }
                 } catch { }
             }
         });
-    }, [rpcClient, views]);
+    }, [rpcClient]);
 
     // Set metadata for component diagram when view changes
     useEffect(() => {

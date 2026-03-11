@@ -168,6 +168,56 @@ export const NATURAL_PROGRAMMING_TEMPLATES: TemplateDefinition[] = [
 
 // Suggested command templates are defined here.
 export const suggestedCommandTemplates: AIPanelPrompt[] = [
+    // {
+    //     type: "text",
+    //     text:"call healthcare tool with relvant prompt to test the tool",
+    //     planMode: false,
+    // },
+        {
+        type: "text",
+        text:"do a small cahgen in funtion this is for test. dont ask me anything",
+        planMode: false,
+    },
+    {
+        type: "text",
+        text:"write 3000 words to check stream text rendering",
+        planMode: false,
+    },
+    {
+        type: "text",
+        text:"write hello world service and invoke it",
+        planMode: false,
+    },
+    {
+        type: "text",
+        text:"Integrate with Github and pull all the open issues and move them to a Google spreadsheet",
+        planMode: false,
+    },
+    //     {
+    //     type: "text",
+    //     text:"Create a Ballerina integration that connects to Google Sheets, reads data from a specified spreadsheet, and saves the data to a CSV file.",
+    //     planMode: false,
+    // },
+    // {
+    //     type: "text",
+    //     text:"Implement a Ballerina function that adds two integers in two tasks steps",
+    //     planMode: false,
+    // },
+    // {
+    //     type: "text",
+    //     text:"Create a FHIR R4 service that can retrieve patient information and observations, and transform HL7v2 messages to FHIR resources",
+    //     planMode: false,
+    // },
+    // {
+    //     type: "text",
+    //     text:"add config.toml with hostname. collect value from me",
+    //     planMode: false,
+    // },
+    // {
+    //     type: "text",
+    //     text: "Create a service that connects to MySQL and fetches all users from a 'users' table with tests",
+    //     planMode: false,
+    // },
     {
         type: "text",
         text: "write a hello world http service",
