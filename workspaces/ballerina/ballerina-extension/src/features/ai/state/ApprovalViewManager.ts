@@ -331,6 +331,19 @@ export class ApprovalViewManager {
         console.log(`[ApprovalViewManager] Opening ${machineView} in main view`);
         openMainView(EVENT_TYPE.OPEN_VIEW, { view: machineView });
     }
+
+    /**
+     * Navigate ReviewMode to a specific index. Routes through state machine.
+     * Only opens if AI panel is active.
+     */
+    openReviewModeAtIndex(index: number): void {
+        if (!AiPanelWebview.currentPanel) {
+            console.log(`[ApprovalViewManager] Skipping ReviewMode open (AI panel closed)`);
+            return;
+        }
+        console.log(`[ApprovalViewManager] Opening ReviewMode at index ${index}`);
+        openMainView(EVENT_TYPE.OPEN_VIEW, { view: MACHINE_VIEW.ReviewMode, reviewData: { currentIndex: index, views: [] } });
+    }
 }
 
 export const approvalViewManager = ApprovalViewManager.getInstance();

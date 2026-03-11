@@ -40,6 +40,7 @@ export const getThemeKind: RequestType<void, ColorThemeKind> = { method: `${_pre
 export const updateCurrentArtifactLocation: RequestType<UpdatedArtifactsResponse, ProjectStructureArtifactResponse> = { method: `${_preFix}/updateCurrentArtifactLocation` };
 export const reviewAccepted: NotificationType<void> = { method: `${_preFix}/reviewAccepted` };
 export const refreshReviewMode: NotificationType<void> = { method: `${_preFix}/refreshReviewMode` };
+export const openReviewModeAtIndex: NotificationType<number> = { method: `${_preFix}/openReviewModeAtIndex` };
 export const handleApprovalPopupClose: NotificationType<HandleApprovalPopupCloseRequest> = { method: `${_preFix}/handleApprovalPopupClose` };
 export const reopenApprovalView: NotificationType<ReopenApprovalViewRequest> = { method: `${_preFix}/reopenApprovalView` };
 export const saveEvalThread: RequestType<SaveEvalThreadRequest, SaveEvalThreadResponse> = { method: `${_preFix}/saveEvalThread` };

@@ -17,7 +17,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from "react";
-import { SemanticDiffResponse, SemanticDiff, ChangeTypeEnum } from "@wso2/ballerina-core";
+import { SemanticDiffResponse, SemanticDiff, ChangeTypeEnum, MachineStateValue, MACHINE_VIEW } from "@wso2/ballerina-core";
 import styled from "@emotion/styled";
 import { useRpcContext } from "@wso2/ballerina-rpc-client";
 import { ReadonlyComponentDiagram } from "./ReadonlyComponentDiagram";
@@ -392,7 +392,13 @@ export function ReviewMode(): JSX.Element {
             allViews.push(...diagramViews);
 
             setViews(allViews);
-            setCurrentIndex(0);
+            let targetIndex = 0;
+            try {
+                const location = await rpcClient.getVisualizerLocation();
+                const requested = location?.reviewData?.currentIndex ?? 0;
+                targetIndex = (requested >= 0 && requested < allViews.length) ? requested : 0;
+            } catch { }
+            setCurrentIndex(targetIndex);
         } catch (error) {
             console.error("[Review Mode] Error fetching semantic diff:", error);
         } finally {
@@ -414,6 +420,24 @@ export function ReviewMode(): JSX.Element {
 
         rpcClient.onRefreshReviewMode(handleRefresh);
     }, [rpcClient, loadSemanticDiff]);
+
+    // Navigate to a specific index when state machine reaches viewReady (handles chip re-clicks when already open)
+    useEffect(() => {
+        rpcClient.onStateChanged(async (state: MachineStateValue) => {
+            if (typeof state === 'object' && 'viewActive' in state && state.viewActive === 'viewReady') {
+                if (views.length === 0) return; // let loadSemanticDiff handle first load
+                try {
+                    const location = await rpcClient.getVisualizerLocation();
+                    if (location?.view !== MACHINE_VIEW.ReviewMode) return;
+                    const idx = location?.reviewData?.currentIndex ?? 0;
+                    if (idx >= 0 && idx < views.length) {
+                        setCurrentIndex(idx);
+                        setShowOldVersion(false);
+                    }
+                } catch { }
+            }
+        });
+    }, [rpcClient, views]);
 
     // Set metadata for component diagram when view changes
     useEffect(() => {

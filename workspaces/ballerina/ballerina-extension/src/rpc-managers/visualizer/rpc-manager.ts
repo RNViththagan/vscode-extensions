@@ -333,6 +333,10 @@ export class VisualizerRpcManager implements VisualizerAPI {
         approvalViewManager.reopenApprovalViewPopup(params.requestId);
     }
 
+    openReviewModeAtIndex(index: number): void {
+        approvalViewManager.openReviewModeAtIndex(index);
+    }
+
     async saveEvalThread(params: SaveEvalThreadRequest): Promise<SaveEvalThreadResponse> {
         try {
             const { filePath, updatedEvalSet } = params;
