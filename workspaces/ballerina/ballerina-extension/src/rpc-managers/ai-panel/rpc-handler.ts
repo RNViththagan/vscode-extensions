@@ -89,7 +89,11 @@ import {
     updateRequirementSpecification,
     approveWebTool,
     declineWebTool,
-    WebToolApprovalRequest
+    WebToolApprovalRequest,
+    submitClarifyAnswer,
+    cancelClarify,
+    ClarifyAnswerRequest,
+    ClarifyCancelRequest,
 } from "@wso2/ballerina-core";
 import { Messenger } from "vscode-messenger";
 import { AiPanelRpcManager } from "./rpc-manager";
@@ -145,4 +149,6 @@ export function registerAiPanelRpcHandlers(messenger: Messenger) {
     messenger.onNotification(openFileDiff, (args: OpenFileDiffRequest) => rpcManger.openFileDiff(args));
     messenger.onRequest(approveWebTool, (args: WebToolApprovalRequest) => rpcManger.approveWebTool(args));
     messenger.onRequest(declineWebTool, (args: WebToolApprovalRequest) => rpcManger.declineWebTool(args));
+    messenger.onRequest(submitClarifyAnswer, (args: ClarifyAnswerRequest) => rpcManger.submitClarifyAnswer(args));
+    messenger.onRequest(cancelClarify, (args: ClarifyCancelRequest) => rpcManger.cancelClarify(args));
 }

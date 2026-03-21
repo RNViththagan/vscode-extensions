@@ -23,6 +23,7 @@ export type StreamItem =
     | { kind: "plan"; tasks: any[]; message?: string; approvalStatus?: "approved" | "revised"; approvalComment?: string }
     | { kind: "config"; data: Record<string, any> }
     | { kind: "connector"; data: Record<string, any> }
+    | { kind: "ask"; data: Record<string, any> }
     | { kind: "try_it"; toolCallId?: string; input?: any; output?: any }
     | { kind: "component"; componentType: string; data: Record<string, any> };
 

@@ -47,6 +47,8 @@ import {
     UsageResponse,
     OpenFileDiffRequest,
     WebToolApprovalRequest,
+    ClarifyAnswerRequest,
+    ClarifyCancelRequest,
 } from "./interfaces";
 
 export interface AIPanelAPI {
@@ -113,4 +115,6 @@ export interface AIPanelAPI {
     openFileDiff: (params: OpenFileDiffRequest) => void;
     approveWebTool: (params: WebToolApprovalRequest) => Promise<void>;
     declineWebTool: (params: WebToolApprovalRequest) => Promise<void>;
+    submitClarifyAnswer: (params: ClarifyAnswerRequest) => Promise<void>;
+    cancelClarify: (params: ClarifyCancelRequest) => Promise<void>;
 }

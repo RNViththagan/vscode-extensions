@@ -48,6 +48,7 @@ import { createBallerinaGetLogsTool, BALLERINA_GET_LOGS_TOOL_NAME } from './tool
 import { createBallerinaStopTool, BALLERINA_STOP_TOOL_NAME } from './tools/ballerina-stop';
 import { RunningServicesManager } from './tools/running-service-manager';
 import { createWebSearchTool, WEB_SEARCH_TOOL_NAME, createWebFetchTool, WEB_FETCH_TOOL_NAME } from './tools/web-tools';
+import { createClarifyTool, CLARIFY_TOOL } from './tools/clarify';
 
 export interface ToolRegistryOptions {
     eventHandler: CopilotEventHandler;
@@ -119,5 +120,6 @@ export function createToolRegistry(opts: ToolRegistryOptions) {
         [BALLERINA_STOP_TOOL_NAME]: createBallerinaStopTool(opts.runningServices, eventHandler),
         [WEB_SEARCH_TOOL_NAME]: createWebSearchTool(eventHandler, webSearchEnabled),
         [WEB_FETCH_TOOL_NAME]: createWebFetchTool(eventHandler, webSearchEnabled),
+        [CLARIFY_TOOL]: createClarifyTool(eventHandler),
     };
 }

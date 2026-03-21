@@ -19,6 +19,7 @@
 import React from "react";
 import MarkdownRenderer from "../MarkdownRenderer";
 import TodoSection from "../TodoSection";
+import AskCard from "./AskCard";
 import ConfigCard from "./ConfigCard";
 import ConnectorCard from "./ConnectorCard";
 import CommandOutputCard from "./CommandOutputCard";
@@ -111,6 +112,7 @@ function getToolCallDisplay(toolName: string | undefined, toolInput: any): { lab
         case "HealthcareLibraryProviderTool": return { label: "Analyzing healthcare libraries..." };
         case "getCompilationErrors": return { label: "Checking for errors..." };
         case "ConfigCollector": return { label: "Reading config..." };
+        case "Clarify": return { label: "Waiting for answers..." };
         case "ConnectorGeneratorTool": return { label: "Generating connector..." };
         case "runTests": return { label: "Running tests..." };
         case "curlRequest": return { label: "Sending HTTP request..." };
@@ -147,6 +149,7 @@ function getToolResultDisplay(toolName: string | undefined, toolOutput: any, hin
             return { label: count > 0 ? `Found ${count} error(s)` : "No issues found" };
         }
         case "ConfigCollector": return { label: "Config loaded" };
+        case "Clarify": return { label: toolOutput?.skipped ? "Clarification skipped" : "Clarification received" };
         case "ConnectorGeneratorTool": return { label: "Connector ready" };
         case "runTests": return { label: toolOutput?.summary ?? "Tests completed" };
         case "curlRequest": return { label: "HTTP request completed" };
@@ -231,6 +234,8 @@ function renderItem(item: StreamItem, idx: number, items: StreamItem[], streamAc
                     approvalComment={item.approvalComment}
                 />
             );
+        case "ask":
+            return <AskCard key={idx} data={item.data} rpcClient={rpcClient} />;
         case "config":
             return <ConfigCard key={idx} data={item.data} rpcClient={rpcClient} />;
         case "connector":

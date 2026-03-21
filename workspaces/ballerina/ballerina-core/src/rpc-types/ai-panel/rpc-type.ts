@@ -49,6 +49,8 @@ import {
     UsageResponse,
     OpenFileDiffRequest,
     WebToolApprovalRequest,
+    ClarifyAnswerRequest,
+    ClarifyCancelRequest,
 } from "./interfaces";
 import { RequestType, NotificationType } from "vscode-messenger-common";
 
@@ -102,3 +104,5 @@ export const getUsage: RequestType<void, UsageResponse | undefined> = { method: 
 export const openFileDiff: NotificationType<OpenFileDiffRequest> = { method: `${_preFix}/openFileDiff` };
 export const approveWebTool: RequestType<WebToolApprovalRequest, void> = { method: `${_preFix}/approveWebTool` };
 export const declineWebTool: RequestType<WebToolApprovalRequest, void> = { method: `${_preFix}/declineWebTool` };
+export const submitClarifyAnswer: RequestType<ClarifyAnswerRequest, void> = { method: `${_preFix}/submitClarifyAnswer` };
+export const cancelClarify: RequestType<ClarifyCancelRequest, void> = { method: `${_preFix}/cancelClarify` };

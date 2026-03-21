@@ -45,6 +45,8 @@ import {
     UpdateChatMessageRequest,
     UsageResponse,
     WebToolApprovalRequest,
+    ClarifyAnswerRequest,
+    ClarifyCancelRequest,
 } from "@wso2/ballerina-core";
 import * as fs from 'fs';
 import path from "path";
@@ -571,6 +573,14 @@ export class AiPanelRpcManager implements AIPanelAPI {
 
     async declineWebTool(params: WebToolApprovalRequest): Promise<void> {
         approvalManager.resolveWebToolApproval(params.requestId, false);
+    }
+
+    async submitClarifyAnswer(params: ClarifyAnswerRequest): Promise<void> {
+        approvalManager.resolveClarify(params.requestId, true, params.answers);
+    }
+
+    async cancelClarify(params: ClarifyCancelRequest): Promise<void> {
+        approvalManager.resolveClarify(params.requestId, false);
     }
 
     async restoreCheckpoint(params: RestoreCheckpointRequest): Promise<void> {
