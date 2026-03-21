@@ -149,7 +149,7 @@ function getToolResultDisplay(toolName: string | undefined, toolOutput: any, hin
             return { label: count > 0 ? `Found ${count} error(s)` : "No issues found" };
         }
         case "ConfigCollector": return { label: "Config loaded" };
-        case "Clarify": return { label: toolOutput?.skipped ? "Clarification skipped" : "Clarification received" };
+        case "Clarify": return { label: toolOutput?.skipped ? "Questions skipped" : "Questions answered" };
         case "ConnectorGeneratorTool": return { label: "Connector ready" };
         case "runTests": return { label: toolOutput?.summary ?? "Tests completed" };
         case "curlRequest": return { label: "HTTP request completed" };
@@ -204,6 +204,7 @@ function renderItem(item: StreamItem, idx: number, items: StreamItem[], streamAc
             );
         }
         case "tool_result": {
+            if (item.toolName === "Clarify" && !item.toolOutput?.skipped) return null;
             if (item.toolName === "curlRequest") {
                 return <TryItCard key={idx} input={item.toolOutput} output={item.toolOutput} />;
             }
