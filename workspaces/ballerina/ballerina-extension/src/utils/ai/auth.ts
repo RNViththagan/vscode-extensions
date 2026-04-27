@@ -205,12 +205,13 @@ export const exchangeStsToCopilotToken = async (stsToken: string): Promise<BIInt
         );
         throw statusError;
     } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
         const isOutage =
-            (typeof (error as any)?.status === 'number' && (error as any).status >= 500) ||
-            (error instanceof Error && /(ECONN|ETIMEDOUT|socket hang up|EAI_AGAIN|Status 5\d\d|<html)/i.test(error.message));
+            !msg.trim() ||
+            /^Status 5\d\d$|<html|ECONN|ETIMEDOUT|socket hang up|EAI_AGAIN/i.test(msg);
         const userMessage = isOutage
             ? 'WSO2 Cloud is temporarily unavailable. Please try again in a few minutes.'
-            : `WSO2 Integrator Copilot authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+            : `WSO2 Integrator Copilot sign in failed: ${msg}`;
         vscode.window.showErrorMessage(userMessage);
         throw error;
     }

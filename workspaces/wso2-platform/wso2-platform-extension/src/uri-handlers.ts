@@ -32,7 +32,6 @@ import { ProgressLocation, type ProviderResult, type QuickPickItem, type Uri, co
 import { ResponseError } from "vscode-jsonrpc";
 import { ErrorCode } from "./choreo-rpc/constants";
 import { getUserInfoForCmd, isRpcActive } from "./cmds/cmd-utils";
-import { getFriendlySignInErrorMessage } from "./error-utils";
 import { updateContextFile } from "./cmds/create-directory-context-cmd";
 import { ext } from "./extensionVariables";
 import { getGitRemotes, getGitRoot } from "./git/util";
@@ -86,12 +85,9 @@ export function activateURIHandlers() {
 										window.showInformationMessage(`Successfully signed into ${ext.terminologies?.cloudName}`);
 									}
 								} catch (error: any) {
+									getLogger().error(`WSO2 Platform sign in Failed: ${error?.message ?? error}`);
 									if (!(error instanceof ResponseError) || ![ErrorCode.NoOrgsAvailable, ErrorCode.NoAccountAvailable].includes(error.code)) {
-										const { userMessage, logMessage } = getFriendlySignInErrorMessage(error);
-										window.showErrorMessage(userMessage);
-										getLogger().error(`WSO2 Platform sign in Failed: ${logMessage}`);
-									} else {
-										getLogger().error(`WSO2 Platform sign in Failed: ${error.message}`);
+										window.showErrorMessage("WSO2 Cloud is temporarily unavailable. Please try again in a few minutes.");
 									}
 								}
 							},

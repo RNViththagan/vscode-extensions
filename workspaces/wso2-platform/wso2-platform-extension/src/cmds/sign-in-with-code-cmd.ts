@@ -21,7 +21,6 @@ import { type ExtensionContext, commands, window } from "vscode";
 import * as vscode from "vscode";
 import { ResponseError } from "vscode-jsonrpc";
 import { ErrorCode } from "../choreo-rpc/constants";
-import { getFriendlySignInErrorMessage } from "../error-utils";
 import { ext } from "../extensionVariables";
 import { getLogger } from "../logger/logger";
 import { isRpcActive, setExtensionName } from "./cmd-utils";
@@ -52,12 +51,9 @@ export function signInWithAuthCodeCommand(context: ExtensionContext) {
 					window.showErrorMessage("Auth Code is required to login");
 				}
 			} catch (error: any) {
+				getLogger().error(`WSO2 Platform sign in Failed: ${error?.message ?? error}`);
 				if (!(error instanceof ResponseError) || ![ErrorCode.NoOrgsAvailable, ErrorCode.NoAccountAvailable].includes(error.code)) {
-					const { userMessage, logMessage } = getFriendlySignInErrorMessage(error);
-					window.showErrorMessage(userMessage);
-					getLogger().error(`WSO2 Platform sign in Failed: ${logMessage}`);
-				} else {
-					getLogger().error(`WSO2 Platform sign in Failed: ${error.message}`);
+					window.showErrorMessage("WSO2 Cloud is temporarily unavailable. Please try again in a few minutes.");
 				}
 			}
 		}),
