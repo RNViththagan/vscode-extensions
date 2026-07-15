@@ -22,7 +22,7 @@ import { PersistedThread, PersistedCheckpoint, WorkspaceMetadata } from './types
 // Current Schema Versions
 // ============================================
 
-export const CURRENT_THREAD_SCHEMA_VERSION = 1;
+export const CURRENT_THREAD_SCHEMA_VERSION = 2;
 export const CURRENT_WORKSPACE_SCHEMA_VERSION = 1;
 export const CURRENT_CHECKPOINT_SCHEMA_VERSION = 1;
 
@@ -67,9 +67,42 @@ function applyMigrations<T>(
 // Thread Migrations
 // ============================================
 
-// Add future migrations here:
-// { fromVersion: 1, toVersion: 2, migrate: (data) => { ... } }
-const threadMigrations: SchemaMigration<PersistedThread>[] = [];
+// No live process resumes across a restart, so any non-terminal v1 status folds into 'accepted'.
+const V1_TO_V2_STATUS: Record<string, string> = {
+    pending: 'accepted',
+    under_review: 'accepted',
+    accepted: 'accepted',
+    error: 'error',
+};
+
+function migrateThreadV1ToV2(data: Record<string, unknown>): Record<string, unknown> {
+    const generations = Array.isArray(data.generations) ? data.generations : [];
+    return {
+        ...data,
+        schemaVersion: 2,
+        generations: generations.map((gen) => {
+            if (!gen || typeof gen !== 'object') {
+                return gen;
+            }
+            const g = gen as Record<string, unknown>;
+            const reviewState = (g.reviewState && typeof g.reviewState === 'object')
+                ? g.reviewState as Record<string, unknown>
+                : {};
+            const oldStatus = typeof reviewState.status === 'string' ? reviewState.status : 'accepted';
+            return {
+                ...g,
+                reviewState: {
+                    ...reviewState,
+                    status: V1_TO_V2_STATUS[oldStatus] ?? 'accepted',
+                },
+            };
+        }),
+    };
+}
+
+const threadMigrations: SchemaMigration<PersistedThread>[] = [
+    { fromVersion: 1, toVersion: 2, migrate: (data) => migrateThreadV1ToV2(data as Record<string, unknown>) as unknown as PersistedThread },
+];
 
 /**
  * Migrate a raw thread object to the current schema version.
